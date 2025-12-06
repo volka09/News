@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Базовая типографика и фон */
+body {
+  @apply bg-gray-50 text-gray-900 font-sans;
+}
+
+/* Улучшение контрастности ссылок */
+a {
+  @apply text-gray-900;
+}
+
+/* Выделение текста */
+::selection {
+  background: #1d8cff22;
+}

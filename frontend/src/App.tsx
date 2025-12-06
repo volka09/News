@@ -1,0 +1,53 @@
+import React from "react";
+import { Link, Routes, Route } from "react-router-dom";
+import Home from "@pages/Home.tsx";
+import Article from "@pages/Article.tsx";
+import Category from "@pages/Category.tsx";
+
+// Словарь соответствий: русское название → slug
+const categoryMap: Record<string, string> = {
+  Политика: "politika",
+  Технологии: "tehnologii",
+  Спорт: "sport",
+  Культура: "kultura",
+};
+
+export default function App(): React.ReactElement {
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="bg-black text-white">
+        <div className="container max-w-7xl flex items-center justify-between py-4">
+          <h1 className="text-xl font-bold tracking-tight">НОВОСТИ</h1>
+          <nav className="flex gap-6 tracking-tight font-bold">
+            {["Все", "Политика", "Технологии", "Спорт", "Культура"].map((c) => (
+              <Link
+                key={c}
+                to={c === "Все" ? "/" : `/category/${categoryMap[c]}`}
+                className="hover:text-brand-400 transition-colors text-white"
+              >
+                {c}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="container max-w-7xl flex-grow py-10 px-4">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/category/:slug" element={<Category />} />
+          <Route path="/article/:slug" element={<Article />} />
+        </Routes>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-black text-white mt-12">
+        <div className="container max-w-7xl py-6 text-sm text-gray-400">
+          © {new Date().getFullYear()} Новости. Все права АБСОЛЮТНО НЕ защищены, но что поделаешь :(.
+        </div>
+      </footer>
+    </div>
+  );
+}
