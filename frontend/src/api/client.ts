@@ -1,19 +1,32 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+const base = import.meta.env.VITE_API_URL ?? "http://localhost:1337";
+export const API_URL = base;
 
-export type ApiError = { status: number; message: string };
+type FetchOptions = RequestInit & { auth?: boolean };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!BASE_URL) throw new Error("VITE_API_URL не задан в .env");
-  const url = `${BASE_URL}${path}`;
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...init
-  });
+function authHeader(): Record<string, string> {
+  const token = sessionStorage.getItem("jwt");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
+  const url = `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(opts.headers ?? {}),
+    ...(opts.auth ? authHeader() : {}),
+  };
+
+  const res = await fetch(url, { ...opts, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw { status: res.status, message: text || res.statusText } as ApiError;
+    let msg = "Request failed";
+    try {
+      const json = JSON.parse(text);
+      msg = json?.error?.message ?? json?.message ?? msg;
+    } catch {
+      msg = text || msg;
+    }
+    throw new Error(msg);
   }
   return res.json();
 }
-
-export const api = { request };
