@@ -1,121 +1,85 @@
-export type Category = {
-  id?: number;
-  name?: string;
-  slug?: string;
-};
+import { apiFetch } from "./client";
 
-export type Media = {
-  url?: string;
-  alternativeText?: string;
-};
+export type Media = { id: number; url: string; alternativeText?: string };
+export type CategoryRef = { id: number; name: string; slug: string };
+export type AuthorRef = { id: number; username: string };
 
 export type Article = {
   id?: number;
   documentId?: string;
-  title?: string;
-  slug?: string;
+  title: string;
+  slug: string;
+  content: string;
   excerpt?: string;
-  content?: string;
   publishDate?: string;
-  coverImage?: Media;
-  category?: Category;
+  publishedAt?: string;
+  coverImage?: Media | null;
+  views?: number;
+  isFeatured?: boolean;
+  readingTime?: number;
+  source?: string;
+  tags?: string[];
+  seo?: { title?: string; description?: string };
+  category?: CategoryRef | null;
+  author?: AuthorRef | null;
 };
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:1337";
+export type Paginated<T> = {
+  data: T[];
+  meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } };
+};
 
-/**
- * Получение всех статей
- */
-export async function fetchArticles(): Promise<Article[]> {
-  const url = `${API_URL}/api/articles?populate=*`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch articles");
-  const json = await res.json();
+const populate = "populate=coverImage,category,author&fields=title,slug,excerpt,publishedAt,isFeatured,readingTime,views";
+const PAGE_SIZE = 9;
 
-  return (json?.data ?? []).map((item: any): Article => {
-    const cat = item?.category ?? null;
-    const img = item?.coverImage ?? null;
-
-    return {
-      id: item.id,
-      documentId: item.documentId,
-      title: item.title ?? "",
-      slug: item.slug ?? "",
-      excerpt: item.excerpt ?? "",
-      content: item.content ?? "",
-      publishDate: item.publishDate ?? "",
-      category: cat ? { name: cat.name, slug: cat.slug } : undefined,
-      coverImage: img
-        ? {
-            url: `${API_URL}${img.url}`, // добавляем базовый URL
-            alternativeText: img.alternativeText,
-          }
-        : undefined,
-    };
-  });
+export async function fetchLatestArticles(page = 1): Promise<Paginated<Article>> {
+  return apiFetch<Paginated<Article>>(
+    `/api/articles?${populate}&sort=publishedAt:desc&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`
+  );
 }
 
-/**
- * Получение последних статей
- */
-export async function fetchLatestArticles(): Promise<Article[]> {
-  const url = `${API_URL}/api/articles?populate=*&sort=publishDate:desc&pagination[pageSize]=9`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch articles");
-  const json = await res.json();
-
-  return (json?.data ?? []).map((item: any): Article => {
-    const cat = item?.category ?? null;
-    const img = item?.coverImage ?? null;
-
-    return {
-      id: item.id,
-      documentId: item.documentId,
-      title: item.title ?? "",
-      slug: item.slug ?? "",
-      excerpt: item.excerpt ?? "",
-      content: item.content ?? "",
-      publishDate: item.publishDate ?? "",
-      category: cat ? { name: cat.name, slug: cat.slug } : undefined,
-      coverImage: img
-        ? {
-            url: `${API_URL}${img.url}`, // добавляем базовый URL
-            alternativeText: img.alternativeText,
-          }
-        : undefined,
-    };
-  });
+export async function fetchArticles(filters: Record<string, string | number> = {}, page = 1): Promise<Paginated<Article>> {
+  const filterQuery = Object.entries(filters)
+    .map(([k, v]) => `filters[${k}][$eq]=${encodeURIComponent(String(v))}`)
+    .join("&");
+  const q = [populate, "sort=publishedAt:desc", filterQuery, `pagination[page]=${page}`, `pagination[pageSize]=${PAGE_SIZE}`]
+    .filter(Boolean)
+    .join("&");
+  return apiFetch<Paginated<Article>>(`/api/articles?${q}`);
 }
 
-/**
- * Получение одной статьи по slug
- */
 export async function fetchArticle(slug: string): Promise<Article> {
-  const url = `${API_URL}/api/articles?filters[slug][$eq]=${slug}&populate=*`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch article");
-  const json = await res.json();
+  const r = await apiFetch<Paginated<Article>>(`/api/articles?${populate}&filters[slug][$eq]=${encodeURIComponent(slug)}&pagination[page]=1&pagination[pageSize]=1`);
+  return r.data[0];
+}
 
-  const item = json?.data?.[0];
-  if (!item) throw new Error("Article not found");
+export async function fetchFeatured(page = 1): Promise<Paginated<Article>> {
+  // если есть кастомный endpoint
+  try {
+    return await apiFetch<Paginated<Article>>(`/api/articles/featured?${populate}&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`);
+  } catch {
+    // fallback через стандартные фильтры
+    return fetchArticles({ isFeatured: "true" }, page);
+  }
+}
 
-  const cat = item?.category ?? null;
-  const img = item?.coverImage ?? null;
+// CRUD (требует JWT)
+export async function createArticle(payload: Partial<Article>): Promise<Article> {
+  return apiFetch<Article>("/api/articles", {
+    method: "POST",
+    body: JSON.stringify({ data: payload }),
+    auth: true,
+  });
+}
 
-  return {
-    id: item.id,
-    documentId: item.documentId,
-    title: item.title ?? "",
-    slug: item.slug ?? "",
-    excerpt: item.excerpt ?? "",
-    content: item.content ?? "",
-    publishDate: item.publishDate ?? "",
-    category: cat ? { name: cat.name, slug: cat.slug } : undefined,
-    coverImage: img
-      ? {
-          url: `${API_URL}${img.url}`, // добавляем базовый URL
-          alternativeText: img.alternativeText,
-        }
-      : undefined,
-  };
+export async function updateArticle(id: number, payload: Partial<Article>): Promise<Article> {
+  return apiFetch<Article>(`/api/articles/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ data: payload }),
+    auth: true,
+  });
+}
+
+export async function deleteArticle(id: number): Promise<void> {
+  await apiFetch<void>(`/api/articles/${id}`, { method: "DELETE", auth: true });
 }
