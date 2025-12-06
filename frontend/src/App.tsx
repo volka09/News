@@ -30,7 +30,9 @@ export default function App(): React.ReactElement {
       {/* Header */}
       <header className="bg-black text-white">
         <div className="container max-w-7xl flex items-center justify-between py-4">
-          <h1 className="text-xl font-bold tracking-tight">НОВОСТИ</h1>
+          <Link to="/">
+            <h1 className="text-xl font-bold tracking-tight hover:text-brand-400 transition-colors text-white">НОВОСТИ</h1>
+          </Link>
           <nav className="flex gap-6 tracking-tight font-bold">
             {["Все", "Политика", "Технологии", "Спорт", "Культура"].map((c) => (
               <Link
@@ -57,10 +59,10 @@ export default function App(): React.ReactElement {
               </>
             ) : (
               <>
-                <Link to="/login" className="underline">
+                <Link to="/login" className="hover:text-brand-400 transition-colors text-white">
                   Вход
                 </Link>
-                <Link to="/register" className="underline">
+                <Link to="/register" className="hover:text-brand-400 transition-colors text-white">
                   Регистрация
                 </Link>
               </>
