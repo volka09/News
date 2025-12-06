@@ -21,7 +21,10 @@ export default function Home(): React.ReactElement {
         setMeta(r.meta);
         setError("");
       })
-      .catch(() => setError("Не удалось загрузить новости"))
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : "Не удалось загрузить новости";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, [page, featuredOnly]);
 

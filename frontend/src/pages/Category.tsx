@@ -28,7 +28,8 @@ export default function Category(): React.ReactElement {
         const cat = cats.find((c) => c.slug === slug) ?? null;
         if (mounted) setCategory(cat);
 
-        const resp = await fetchArticles({ "category[slug]": slug! }, page);
+        // Вложенный фильтр: category.slug → filters[category][slug][$eq]
+        const resp = await fetchArticles({ "category.slug": slug! }, page);
         if (mounted) {
           setArticles(resp.data);
           setMeta(resp.meta);
@@ -38,7 +39,7 @@ export default function Category(): React.ReactElement {
         const message =
           typeof (e as { message?: unknown })?.message === "string"
             ? (e as { message: string }).message
-            : "Failed to load";
+            : "Не удалось загрузить";
         if (mounted) setError(message);
       } finally {
         if (mounted) setLoading(false);

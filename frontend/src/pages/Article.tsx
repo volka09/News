@@ -4,6 +4,7 @@ import { fetchArticle, deleteArticle, type Article } from "@api/articles.ts";
 import { formatDate } from "@utils/format.ts";
 import { getRole } from "@utils/auth.ts";
 import Skeleton from "@components/Skeleton.tsx";
+import { API_URL } from "@api/client.ts";
 
 const SafeSkeleton = Skeleton as unknown as React.FC<{ className?: string }>;
 
@@ -65,19 +66,26 @@ export default function Article(): React.ReactElement {
   }
 
   if (error) {
-    return <div className="rounded border bg-red-50 p-4 text-red-700">{error}</div>;
+    return (
+      <div className="rounded border bg-red-50 p-4 text-red-700">{error}</div>
+    );
   }
 
   if (!item) {
     return <div className="text-gray-500">Article not found.</div>;
   }
 
+  const imgUrl = item.coverImage?.url ? `${API_URL}${item.coverImage.url}` : null;
+
   return (
     <article className="prose max-w-none">
       <div className="flex items-start justify-between gap-4">
         <h1>{item.title}</h1>
         {role === "editor" && item.id && (
-          <button onClick={onDelete} className="bg-red-600 text-white rounded px-3 py-1 text-sm">
+          <button
+            onClick={onDelete}
+            className="bg-red-600 text-white rounded px-3 py-1 text-sm"
+          >
             Удалить
           </button>
         )}
@@ -89,16 +97,34 @@ export default function Article(): React.ReactElement {
         </p>
       )}
 
-      {item.coverImage?.url && (
-        <img src={item.coverImage.url} alt={item.title} className="my-4 rounded" />
+      {imgUrl && (
+        <img src={imgUrl} alt={item.title} className="my-4 rounded" />
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 my-2">
-        <div>{item.category?.name ? `Категория: ${item.category.name}` : "Категория не указана"}</div>
-        <div>{item.author?.username ? `Автор: ${item.author.username}` : "Автор не указан"}</div>
-        <div>{Array.isArray(item.tags) && item.tags.length ? `Теги: ${item.tags.join(", ")}` : "Теги не указаны"}</div>
-        <div>{typeof item.readingTime === "number" ? `Время чтения: ${item.readingTime} мин` : ""}</div>
-        <div>{typeof item.views === "number" ? `Просмотры: ${item.views}` : ""}</div>
+        <div>
+          {item.category?.name
+            ? `Категория: ${item.category.name}`
+            : "Категория не указана"}
+        </div>
+        <div>
+          {item.author?.username
+            ? `Автор: ${item.author.username}`
+            : "Автор не указан"}
+        </div>
+        <div>
+          {Array.isArray(item.tags) && item.tags.length
+            ? `Теги: ${item.tags.join(", ")}`
+            : "Теги не указаны"}
+        </div>
+        <div>
+          {typeof item.readingTime === "number"
+            ? `Время чтения: ${item.readingTime} мин`
+            : ""}
+        </div>
+        <div>
+          {typeof item.views === "number" ? `Просмотры: ${item.views}` : ""}
+        </div>
       </div>
 
       {item.excerpt && <p className="text-gray-700">{item.excerpt}</p>}
