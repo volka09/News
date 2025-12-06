@@ -13,18 +13,30 @@ export default function Navbar(): React.ReactElement {
 
   return (
     <div className="container max-w-7xl flex items-center justify-between py-4">
-      <Link to="/" className="text-xl font-bold tracking-tight">НОВОСТИ</Link>
+      <Link to="/" className="text-xl font-bold tracking-tight">
+        НОВОСТИ
+      </Link>
       <div className="flex items-center gap-4">
-        {role === "editor" && <Link to="/editor/article" className="text-sm underline">Создать новость</Link>}
+        {role === "editor" && (
+          <Link to="/editor/article" className="text-sm underline">
+            Создать новость
+          </Link>
+        )}
         {user ? (
           <>
             <span className="text-sm text-gray-600">Привет, {user.username}</span>
-            <button className="text-sm underline" onClick={logout}>Выйти</button>
+            <button className="text-sm underline" onClick={logout}>
+              Выйти
+            </button>
           </>
         ) : (
           <>
-            <Link to="/login" className="text-sm underline">Вход</Link>
-            <Link to="/register" className="text-sm underline">Регистрация</Link>
+            <Link to="/login" className="text-sm underline">
+              Вход
+            </Link>
+            <Link to="/register" className="text-sm underline">
+              Регистрация
+            </Link>
           </>
         )}
       </div>

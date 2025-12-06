@@ -1,11 +1,22 @@
 import React, { useState } from "react";
-import { login } from "@api/auth.ts";
-import { saveAuth } from "@utils/auth.ts";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "@api/client.ts";
+import { saveAuth } from "@utils/auth.ts";
+import type { Role } from "@utils/auth.ts"; // тип роли из твоего utils
+
+type AuthResponse = {
+  jwt: string;
+  user: {
+    id: number;
+    username: string;
+    email?: string;
+    role?: { type?: string; name?: string };
+  };
+};
 
 export default function Login(): React.ReactElement {
   const nav = useNavigate();
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -13,30 +24,49 @@ export default function Login(): React.ReactElement {
     e.preventDefault();
     setError("");
     try {
-      const res = await login({ identifier, password });
-      // роль можно получить из профиля или задать после логина (например, из claims)
-      const role: "authenticated" | "editor" = "authenticated";
+      const res = await apiFetch<AuthResponse>("/api/auth/local", {
+        method: "POST",
+        body: JSON.stringify({ identifier: email, password }),
+      });
+
+      // Стандартно назначаем 'authenticated' если Strapi не вернул тип роли
+      const roleValue = res.user?.role?.type ?? "authenticated";
+
+      // Приводим к типу Role, чтобы удовлетворить сигнатуру saveAuth
+      const role = roleValue as unknown as Role;
+
+      // ВАЖНО: порядок аргументов — (jwt, role, user)
       saveAuth(res.jwt, role, res.user);
-      nav("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка авторизации");
+
+      // Обновляем страницу для мгновенного обновления интерфейса
+      location.reload();
+    } catch {
+      setError("Неверный логин или пароль");
     }
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded shadow p-6">
-      <h1 className="text-2xl font-bold mb-4">Вход</h1>
-      {error && <div className="bg-red-50 text-red-700 border rounded p-2 mb-3">{error}</div>}
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input className="mt-1 w-full border rounded p-2" value={identifier} onChange={(e) => setIdentifier(e.target.value)} type="email" required />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Пароль</label>
-          <input className="mt-1 w-full border rounded p-2" value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
-        </div>
-        <button className="bg-black text-white px-4 py-2 rounded">Войти</button>
+    <div className="max-w-md mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Вход</h2>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
+        <input
+          type="password"
+          placeholder="Пароль"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
+        {error && <div className="text-red-600">{error}</div>}
+        <button type="submit" className="bg-black text-white px-4 py-2 rounded">
+          Войти
+        </button>
       </form>
     </div>
   );

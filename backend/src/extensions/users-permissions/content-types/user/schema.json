@@ -71,6 +71,12 @@
       "relation": "oneToMany",
       "target": "api::article.article",
       "mappedBy": "Author"
+    },
+    "favorites": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::favorite.favorite",
+      "mappedBy": "user"
     }
   }
 }

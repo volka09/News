@@ -1,32 +1,41 @@
 import React, { useEffect, useState } from "react";
-import { fetchLatestArticles, fetchFeatured, type Article, type Paginated } from "@api/articles.ts";
+import { fetchLatestArticles, type Article, type Paginated } from "@api/articles.ts";
+import { fetchFavorites } from "@api/favorites.ts";
 import Skeleton from "@components/Skeleton.tsx";
 import ArticleCard from "@components/ArticleCard.tsx";
+import { getUser } from "@utils/auth.ts";
 
 export default function Home(): React.ReactElement {
   const [items, setItems] = useState<Article[]>([]);
   const [meta, setMeta] = useState<Paginated<Article>["meta"] | null>(null);
   const [page, setPage] = useState(1);
-  const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setLoading(true);
-    const loader = featuredOnly ? fetchFeatured(page) : fetchLatestArticles(page);
-    loader
-      .then((r) => {
-        setItems(r.data);
-        setMeta(r.meta);
-        setError("");
-      })
-      .catch((e) => {
-        const msg = e instanceof Error ? e.message : "Не удалось загрузить новости";
-        setError(msg);
-      })
-      .finally(() => setLoading(false));
-  }, [page, featuredOnly]);
+    if (favoritesOnly && Boolean(getUser())) {
+      fetchFavorites()
+        .then((favs) => {
+          setItems(favs.map((f) => f.article as Article));
+          setMeta(null);
+          setError("");
+        })
+        .catch(() => setError("Не удалось загрузить избранное"))
+        .finally(() => setLoading(false));
+    } else {
+      fetchLatestArticles(page)
+        .then((r) => {
+          setItems(r.data);
+          setMeta(r.meta);
+          setError("");
+        })
+        .catch(() => setError("Не удалось загрузить новости"))
+        .finally(() => setLoading(false));
+    }
+  }, [page, favoritesOnly]);
 
   function changePage(p: number) {
     if (!meta) return;
@@ -39,14 +48,16 @@ export default function Home(): React.ReactElement {
     <section className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold">Последние новости</h2>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={featuredOnly}
-            onChange={(e) => setFeaturedOnly(e.target.checked)}
-          />
-          Только избранные
-        </label>
+        {Boolean(getUser()) && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={favoritesOnly}
+              onChange={(e) => setFavoritesOnly(e.target.checked)}
+            />
+            Только избранные
+          </label>
+        )}
       </div>
 
       {loading ? (

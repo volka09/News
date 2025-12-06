@@ -3,6 +3,10 @@ import { Link, Routes, Route } from "react-router-dom";
 import Home from "@pages/Home.tsx";
 import Article from "@pages/Article.tsx";
 import Category from "@pages/Category.tsx";
+import Login from "@pages/Login.tsx";
+import Register from "@pages/Register.tsx";
+import EditorArticleForm from "@pages/EditorArticleForm.tsx";
+import { getRole, getUser, clearAuth } from "@utils/auth.ts";
 
 // Словарь соответствий: русское название → slug
 const categoryMap: Record<string, string> = {
@@ -13,6 +17,14 @@ const categoryMap: Record<string, string> = {
 };
 
 export default function App(): React.ReactElement {
+  const role = getRole();
+  const user = getUser<{ username: string }>();
+
+  function logout() {
+    clearAuth();
+    location.reload(); // мгновенно обновляем интерфейс после выхода
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -30,6 +42,30 @@ export default function App(): React.ReactElement {
               </Link>
             ))}
           </nav>
+          <div className="flex items-center gap-4 text-sm">
+            {role === "editor" && (
+              <Link to="/editor/article" className="underline">
+                Создать новость
+              </Link>
+            )}
+            {user ? (
+              <>
+                <span className="text-gray-300">Привет, {user.username}</span>
+                <button onClick={logout} className="underline">
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="underline">
+                  Вход
+                </Link>
+                <Link to="/register" className="underline">
+                  Регистрация
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -39,6 +75,10 @@ export default function App(): React.ReactElement {
           <Route path="/" element={<Home />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/article/:slug" element={<Article />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/editor/article" element={<EditorArticleForm />} />
+          <Route path="/editor/article/:slug" element={<EditorArticleForm />} />
         </Routes>
       </main>
 
