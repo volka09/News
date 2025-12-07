@@ -10,23 +10,27 @@ function authHeader(): Record<string, string> {
 
 export async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   const url = `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(opts.headers ?? {}),
     ...(opts.auth ? authHeader() : {}),
   };
 
-  const res = await fetch(url, { ...opts, headers });
+  const { auth, ...rest } = opts;
+
+  const res = await fetch(url, { ...rest, headers });
+  const raw = await res.text().catch(() => "");
+
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    let msg = "Request failed";
+    let msg = raw || "Request failed";
     try {
-      const json = JSON.parse(text);
+      const json = JSON.parse(raw);
       msg = json?.error?.message ?? json?.message ?? msg;
-    } catch {
-      msg = text || msg;
-    }
-    throw new Error(msg);
+    } catch {}
+    throw new Error(`${res.status} ${res.statusText} ${rest.method ?? "GET"} ${url} → ${msg}`);
   }
-  return res.json();
+
+  if (!raw) return {} as T;
+  return JSON.parse(raw);
 }

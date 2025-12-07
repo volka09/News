@@ -108,8 +108,8 @@ export default function Article(): React.ReactElement {
             : "Категория не указана"}
         </div>
         <div>
-          {item.author?.username
-            ? `Автор: ${item.author.username}`
+          {item.Author?.username
+            ? `Автор: ${item.Author?.username}`
             : "Автор не указан"}
         </div>
         <div>

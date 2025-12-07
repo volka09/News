@@ -512,7 +512,7 @@ export interface ApiFavoriteFavorite extends Struct.CollectionTypeSchema {
     singularName: 'favorite';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     article: Schema.Attribute.Relation<'manyToOne', 'api::article.article'>;

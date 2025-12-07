@@ -19,8 +19,8 @@ export default function Home(): React.ReactElement {
     if (favoritesOnly && Boolean(getUser())) {
       fetchFavorites()
         .then((favs) => {
-          setItems(favs.map((f) => f.article as Article));
-          setMeta(null);
+          setItems(Array.isArray(favs.data) ? favs.data : []);
+          setMeta(favs.meta);
           setError("");
         })
         .catch(() => setError("Не удалось загрузить избранное"))
@@ -28,7 +28,7 @@ export default function Home(): React.ReactElement {
     } else {
       fetchLatestArticles(page)
         .then((r) => {
-          setItems(r.data);
+          setItems(Array.isArray(r.data) ? r.data : []);
           setMeta(r.meta);
           setError("");
         })
@@ -68,13 +68,13 @@ export default function Home(): React.ReactElement {
         </div>
       ) : error ? (
         <div className="text-red-600">{error}</div>
-      ) : items.length === 0 ? (
+      ) : !Array.isArray(items) || items.length === 0 ? (
         <div className="text-gray-500">Пока нет новостей.</div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {items.map((a) => (
-              <ArticleCard key={a.documentId ?? a.id ?? a.slug ?? Math.random()} article={a} />
+              <ArticleCard key={a.id ?? a.slug ?? Math.random()} article={a} />
             ))}
           </div>
 

@@ -7,9 +7,8 @@
     "displayName": "Favorite"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
-  "pluginOptions": {},
   "attributes": {
     "user": {
       "type": "relation",

@@ -5,8 +5,7 @@ export type CategoryRef = { id: number; name: string; slug: string };
 export type AuthorRef = { id: number; username: string };
 
 export type Article = {
-  id?: number;
-  documentId?: string;
+  id: number;
   title: string;
   slug: string;
   content: string;
@@ -18,10 +17,12 @@ export type Article = {
   isFeatured?: boolean;
   readingTime?: number;
   source?: string;
-  tags?: string[];
   seo?: { title?: string; description?: string };
   category?: CategoryRef | null;
-  author?: AuthorRef | null;
+  Author?: AuthorRef | null;
+  isFavorite?: boolean;
+  favoriteId?: number;
+  tags?: string[];
 };
 
 export type Paginated<T> = {
@@ -29,50 +30,41 @@ export type Paginated<T> = {
   meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } };
 };
 
-// Самый совместимый вариант populate для Strapi v4+
-const populate = "populate=*";
+// ✅ populate только существующих связей
+const POPULATE = "populate[category]=true&populate[coverImage]=true&populate[Author]=true";
 const PAGE_SIZE = 9;
 
 export async function fetchLatestArticles(page = 1): Promise<Paginated<Article>> {
   return apiFetch<Paginated<Article>>(
-    `/api/articles?${populate}&sort=publishedAt:desc&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`
+    `/api/articles?${POPULATE}&sort=publishedAt:desc&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`,
+    { auth: true }
   );
 }
 
-export async function fetchArticles(
-  filters: Record<string, string | number | boolean> = {},
-  page = 1
-): Promise<Paginated<Article>> {
+export async function fetchArticles(filters: Record<string, string | number | boolean> = {}, page = 1): Promise<Paginated<Article>> {
   const filterQuery = Object.entries(filters)
     .map(([k, v]) => {
-      // Поддержка вложенных ключей: "category.slug" → filters[category][slug][$eq]
       const fixedKey = k.includes(".") ? k.replace(/\./g, "][") : k;
-      const value =
-        typeof v === "boolean"
-          ? v // true/false без кавычек
-          : encodeURIComponent(String(v));
+      const value = typeof v === "boolean" ? v : encodeURIComponent(String(v));
       return `filters[${fixedKey}][$eq]=${value}`;
     })
     .join("&");
 
   const q = [
-    populate,
+    POPULATE,
     "sort=publishedAt:desc",
     filterQuery,
     `pagination[page]=${page}`,
-    `pagination[pageSize]=${PAGE_SIZE}`
-  ]
-    .filter(Boolean)
-    .join("&");
+    `pagination[pageSize]=${PAGE_SIZE}`,
+  ].filter(Boolean).join("&");
 
-  return apiFetch<Paginated<Article>>(`/api/articles?${q}`);
+  return apiFetch<Paginated<Article>>(`/api/articles?${q}`, { auth: true });
 }
 
 export async function fetchArticle(slug: string): Promise<Article> {
   const r = await apiFetch<Paginated<Article>>(
-    `/api/articles?${populate}&filters[slug][$eq]=${encodeURIComponent(
-      slug
-    )}&pagination[page]=1&pagination[pageSize]=1`
+    `/api/articles?${POPULATE}&filters[slug][$eq]=${encodeURIComponent(slug)}&pagination[page]=1&pagination[pageSize]=1`,
+    { auth: true }
   );
   return r.data[0];
 }
@@ -80,20 +72,19 @@ export async function fetchArticle(slug: string): Promise<Article> {
 export async function fetchFeatured(page = 1): Promise<Paginated<Article>> {
   try {
     return await apiFetch<Paginated<Article>>(
-      `/api/articles/featured?${populate}&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`
+      `/api/articles/featured?${POPULATE}&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`,
+      { auth: true }
     );
   } catch {
-    // Фильтр как булево значение
-    return fetchArticles({ "isFeatured": true }, page);
+    return fetchArticles({ isFeatured: true }, page);
   }
 }
 
-// CRUD (требует JWT)
 export async function createArticle(payload: Partial<Article>): Promise<Article> {
   return apiFetch<Article>("/api/articles", {
     method: "POST",
     body: JSON.stringify({ data: payload }),
-    auth: true
+    auth: true,
   });
 }
 
@@ -101,7 +92,7 @@ export async function updateArticle(id: number, payload: Partial<Article>): Prom
   return apiFetch<Article>(`/api/articles/${id}`, {
     method: "PUT",
     body: JSON.stringify({ data: payload }),
-    auth: true
+    auth: true,
   });
 }
 
