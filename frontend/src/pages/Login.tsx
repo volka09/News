@@ -38,8 +38,8 @@ export default function Login(): React.ReactElement {
       // ВАЖНО: порядок аргументов — (jwt, role, user)
       saveAuth(res.jwt, role, res.user);
 
-      // Обновляем страницу для мгновенного обновления интерфейса
-      location.reload();
+      // Переадресация на /home после успешного входа
+      nav("/");
     } catch {
       setError("Неверный логин или пароль");
     }
