@@ -1,101 +1,141 @@
-import { apiFetch } from "./client";
+import { get, post, put, del } from "./client";
 
-export type Media = { id: number; url: string; alternativeText?: string };
-export type CategoryRef = { id: number; name: string; slug: string };
-export type AuthorRef = { id: number; username: string };
+export type Media = {
+  id?: number;
+  url?: string;
+  alternativeText?: string;
+};
+
+export type CategoryRef = {
+  id?: number;
+  name?: string;
+  slug?: string;
+};
+
+export type AuthorRef = {
+  id?: number;
+  username?: string;
+};
 
 export type Article = {
-  id: number;
+  id?: number;
+  slug?: string;
   title: string;
-  slug: string;
-  content: string;
+  description?: string;
+  content?: string;
   excerpt?: string;
   publishDate?: string;
   publishedAt?: string;
-  coverImage?: Media | null;
+
+  coverUrl?: string;
+  coverImage?: number | Media;
+
   views?: number;
   isFeatured?: boolean;
   readingTime?: number;
-  source?: string;
-  seo?: { title?: string; description?: string };
-  category?: CategoryRef | null;
-  Author?: AuthorRef | null;
+
+  category?: number | CategoryRef;
+  Author?: number | AuthorRef;
+
+  tags?: string[];
+
   isFavorite?: boolean;
   favoriteId?: number;
-  tags?: string[];
+};
+
+export type Pagination = {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  total: number;
 };
 
 export type Paginated<T> = {
   data: T[];
-  meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } };
+  meta: { pagination: Pagination };
 };
 
-// ✅ populate только существующих связей
-const POPULATE = "populate[category]=true&populate[coverImage]=true&populate[Author]=true";
-const PAGE_SIZE = 9;
+/**
+ * Последние статьи (Home.tsx)
+ */
+export function fetchLatestArticles(page = 1, pageSize = 9) {
+  const qs = new URLSearchParams({
+    "pagination[page]": String(page),
+    "pagination[pageSize]": String(pageSize),
+  });
+  qs.append("sort[0]", "publishedAt:desc");
+  qs.append("populate", "*");
 
-export async function fetchLatestArticles(page = 1): Promise<Paginated<Article>> {
-  return apiFetch<Paginated<Article>>(
-    `/api/articles?${POPULATE}&sort=publishedAt:desc&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`,
-    { auth: true }
-  );
+  return get<Paginated<Article>>(`/api/articles?${qs.toString()}`);
 }
 
-export async function fetchArticles(filters: Record<string, string | number | boolean> = {}, page = 1): Promise<Paginated<Article>> {
-  const filterQuery = Object.entries(filters)
-    .map(([k, v]) => {
-      const fixedKey = k.includes(".") ? k.replace(/\./g, "][") : k;
-      const value = typeof v === "boolean" ? v : encodeURIComponent(String(v));
-      return `filters[${fixedKey}][$eq]=${value}`;
-    })
-    .join("&");
+/**
+ * Универсальная выборка (Category.tsx)
+ */
+export function fetchArticles(filters: Record<string, string>, page = 1, pageSize = 9) {
+  const qs = new URLSearchParams({
+    "pagination[page]": String(page),
+    "pagination[pageSize]": String(pageSize),
+  });
+  qs.append("sort[0]", "publishedAt:desc");
+  qs.append("populate", "*");
 
-  const q = [
-    POPULATE,
-    "sort=publishedAt:desc",
-    filterQuery,
-    `pagination[page]=${page}`,
-    `pagination[pageSize]=${PAGE_SIZE}`,
-  ].filter(Boolean).join("&");
+  Object.entries(filters).forEach(([key, value]) => {
+    const parts = key.split(".");
+    if (parts.length === 1) {
+      qs.append(`filters[${parts[0]}][$eq]`, value);
+    } else if (parts.length === 2) {
+      qs.append(`filters[${parts[0]}][${parts[1]}][$eq]`, value);
+    }
+  });
 
-  return apiFetch<Paginated<Article>>(`/api/articles?${q}`, { auth: true });
+  return get<Paginated<Article>>(`/api/articles?${qs.toString()}`);
+}
+
+/**
+ * Статья по slug
+ */
+export async function fetchArticleBySlug(slug: string): Promise<Article | null> {
+  const qs = new URLSearchParams();
+  qs.append("filters[slug][$eq]", slug);
+  qs.append("populate", "*");
+
+  const resp = await get<Paginated<Article>>(`/api/articles?${qs.toString()}`);
+  return Array.isArray(resp.data) && resp.data.length ? resp.data[0] : null;
 }
 
 export async function fetchArticle(slug: string): Promise<Article> {
-  const r = await apiFetch<Paginated<Article>>(
-    `/api/articles?${POPULATE}&filters[slug][$eq]=${encodeURIComponent(slug)}&pagination[page]=1&pagination[pageSize]=1`,
-    { auth: true }
-  );
-  return r.data[0];
+  const a = await fetchArticleBySlug(slug);
+  if (!a) throw new Error("Статья не найдена");
+  return a;
 }
 
-export async function fetchFeatured(page = 1): Promise<Paginated<Article>> {
-  try {
-    return await apiFetch<Paginated<Article>>(
-      `/api/articles/featured?${POPULATE}&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`,
-      { auth: true }
-    );
-  } catch {
-    return fetchArticles({ isFeatured: true }, page);
-  }
-}
-
-export async function createArticle(payload: Partial<Article>): Promise<Article> {
-  return apiFetch<Article>("/api/articles", {
-    method: "POST",
-    body: JSON.stringify({ data: payload }),
-    auth: true,
+/**
+ * Авторские статьи (AuthorDashboard.tsx)
+ */
+export function fetchAuthorArticles(authorId: number, page = 1, pageSize = 9) {
+  const qs = new URLSearchParams({
+    "pagination[page]": String(page),
+    "pagination[pageSize]": String(pageSize),
   });
+  qs.append("sort[0]", "publishedAt:desc");
+  qs.append("populate", "*");
+  qs.append("filters[Author][id][$eq]", String(authorId));
+
+  return get<Paginated<Article>>(`/api/articles?${qs.toString()}`);
 }
 
-export async function updateArticle(id: number, payload: Partial<Article>): Promise<Article> {
-  return apiFetch<Article>(`/api/articles/${id}`, {
-    method: "PUT",
-    body: JSON.stringify({ data: payload }),
-    auth: true,
-  });
+/**
+ * CRUD
+ */
+export function createArticle(payload: Partial<Article>) {
+  return post<Article>("/api/articles", { data: payload });
 }
 
-export async function deleteArticle(id: number): Promise<void> {
-  await apiFetch<void>(`/api/articles/${id}`, { method: "DELETE", auth: true });
+export function updateArticle(id: number, payload: Partial<Article>) {
+  return put<Article>(`/api/articles/${id}`, { data: payload });
+}
+
+export function deleteArticle(id: number) {
+  return del<void>(`/api/articles/${id}`);
 }

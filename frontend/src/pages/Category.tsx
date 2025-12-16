@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { fetchCategories, type Category } from "@api/categories.ts";
-import { fetchArticles, type Article, type Paginated } from "@api/articles.ts";
+import { fetchArticles, type Article, type Paginated, type Media, type CategoryRef } from "@api/articles.ts";
 import ArticleCard from "@components/ArticleCard.tsx";
 import Skeleton from "@components/Skeleton.tsx";
 
 const SafeSkeleton = Skeleton as unknown as React.FC<{ className?: string }>;
 const SafeArticleCard = ArticleCard as unknown as React.FC<{ article: Article }>;
+
+// безопасные геттеры
+function getCategory(a: Article): CategoryRef | undefined {
+  return typeof a.category === "object" ? a.category : undefined;
+}
+function getCoverImage(a: Article): Media | undefined {
+  return typeof a.coverImage === "object" ? a.coverImage : undefined;
+}
 
 export default function Category(): React.ReactElement {
   const { slug } = useParams<{ slug: string }>();
@@ -28,7 +36,6 @@ export default function Category(): React.ReactElement {
         const cat = cats.find((c) => c.slug === slug) ?? null;
         if (mounted) setCategory(cat);
 
-        // Вложенный фильтр: category.slug → filters[category][slug][$eq]
         const resp = await fetchArticles({ "category.slug": slug! }, page);
         if (mounted) {
           setArticles(resp.data);
@@ -74,7 +81,7 @@ export default function Category(): React.ReactElement {
   }
 
   if (!category) {
-    return <div className="text-gray-500">Category not found.</div>;
+    return <div className="text-gray-500">Категория не найдена.</div>;
   }
 
   return (
@@ -82,7 +89,9 @@ export default function Category(): React.ReactElement {
       <h1 className="text-2xl font-bold mb-4">{category.name}</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {articles.length > 0 ? (
-          articles.map((a) => <SafeArticleCard key={a.id ?? a.slug ?? Math.random()} article={a} />)
+          articles.map((a, i) => (
+            <SafeArticleCard key={a.id ?? a.slug ?? i} article={a} />
+          ))
         ) : (
           <div className="text-gray-500">Нет новостей в выбранной категории.</div>
         )}
@@ -90,7 +99,11 @@ export default function Category(): React.ReactElement {
 
       {meta && meta.pagination.pageCount > 1 && (
         <nav className="flex items-center justify-center gap-2 mt-6">
-          <button className="px-3 py-1 rounded border" onClick={() => changePage(page - 1)} disabled={page === 1}>
+          <button
+            className="px-3 py-1 rounded border"
+            onClick={() => changePage(page - 1)}
+            disabled={page === 1}
+          >
             Назад
           </button>
           <span className="px-2 text-sm">

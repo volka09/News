@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchArticle, deleteArticle, type Article } from "@api/articles.ts";
+import { fetchArticle, deleteArticle, type Article, type Media, type CategoryRef, type AuthorRef } from "@api/articles.ts";
 import { formatDate } from "@utils/format.ts";
 import { getRole } from "@utils/auth.ts";
 import Skeleton from "@components/Skeleton.tsx";
 import { API_URL } from "@api/client.ts";
 
 const SafeSkeleton = Skeleton as unknown as React.FC<{ className?: string }>;
+
+// безопасные геттеры для union-полей
+function getCoverImage(a: Article): Media | undefined {
+  return typeof a.coverImage === "object" ? a.coverImage : undefined;
+}
+function getCategory(a: Article): CategoryRef | undefined {
+  return typeof a.category === "object" ? a.category : undefined;
+}
+function getAuthor(a: Article): AuthorRef | undefined {
+  return typeof a.Author === "object" ? a.Author : undefined;
+}
 
 export default function Article(): React.ReactElement {
   const { slug } = useParams<{ slug: string }>();
@@ -75,7 +86,11 @@ export default function Article(): React.ReactElement {
     return <div className="text-gray-500">Article not found.</div>;
   }
 
-  const imgUrl = item.coverImage?.url ? `${API_URL}${item.coverImage.url}` : null;
+  const cover = getCoverImage(item);
+  const category = getCategory(item);
+  const author = getAuthor(item);
+
+  const imgUrl = cover?.url ? `${API_URL}${cover.url}` : null;
 
   return (
     <article className="prose max-w-none">
@@ -98,18 +113,22 @@ export default function Article(): React.ReactElement {
       )}
 
       {imgUrl && (
-        <img src={imgUrl} alt={item.title} className="my-4 rounded" />
+        <img
+          src={imgUrl}
+          alt={cover?.alternativeText ?? item.title}
+          className="my-4 rounded"
+        />
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 my-2">
         <div>
-          {item.category?.name
-            ? `Категория: ${item.category.name}`
+          {category?.name
+            ? `Категория: ${category.name}`
             : "Категория не указана"}
         </div>
         <div>
-          {item.Author?.username
-            ? `Автор: ${item.Author?.username}`
+          {author?.username
+            ? `Автор: ${author.username}`
             : "Автор не указан"}
         </div>
         <div>

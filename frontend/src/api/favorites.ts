@@ -1,27 +1,35 @@
-import { apiFetch } from "./client";
-import { Article, Paginated } from "./articles";
+import { get, post, del } from "./client";
+import type { Article, Paginated } from "./articles";
 
-// export type Favorite = {
-//   id: number;
-//   article: { id: number; title: string; slug: string };
-// };
+/**
+ * Список избранного пользователя.
+ * Если у тебя другой endpoint — поменяй путь.
+ */
+export function fetchFavorites(page = 1, pageSize = 9) {
+  const qs = new URLSearchParams({
+    "pagination[page]": String(page),
+    "pagination[pageSize]": String(pageSize),
+  });
+  qs.append("populate[coverImage]", "*");
+  qs.append("populate[category]", "*");
+  qs.append("populate[Author]", "*");
 
-// Получение избранных статей
-export async function fetchFavorites(): Promise<Paginated<Article>> {
-  return apiFetch<Paginated<Article>>("/api/favorites/user", { auth: true });
+  return get<Paginated<Article>>(`/api/favorites?${qs.toString()}`);
 }
 
-export async function addFavorite(articleId: number): Promise<{ isFavorite: boolean; favoriteId: number }> {
-  return apiFetch<{ isFavorite: boolean; favoriteId: number }>("/api/favorites", {
-    method: "POST",
-    body: JSON.stringify({ data: { article: articleId } }),
-    auth: true,
+/**
+ * Добавление статьи в избранное.
+ * Ожидается, что бэкенд создаёт Favorite с relation на Article и текущего пользователя.
+ */
+export function addFavorite(articleId: number) {
+  return post<{ id: number }>(`/api/favorites`, {
+    data: { article: articleId },
   });
 }
 
-export async function removeFavorite(favoriteId: number): Promise<{ isFavorite: boolean; favoriteId: number }> {
-  return apiFetch<{ isFavorite: boolean; favoriteId: number }>(`/api/favorites/${favoriteId}`, {
-    method: "DELETE",
-    auth: true,
-  });
+/**
+ * Удаление избранного по его id.
+ */
+export function removeFavorite(favoriteId: number) {
+  return del<void>(`/api/favorites/${favoriteId}`);
 }
