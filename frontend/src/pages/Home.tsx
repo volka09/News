@@ -6,14 +6,6 @@ import { getUser } from "@utils/auth.ts";
 import Skeleton from "@components/Skeleton.tsx";
 import ArticleCard from "@components/ArticleCard.tsx";
 
-/**
- * GPT5 — Главная страница с восстановленным фильтром избранных новостей:
- * - Блок "Избранные" (isFeatured = true) поверх общего списка.
- * - Общий список новостей ниже, с пагинацией.
- * - Ничего не трогаем в авторстве/relations, только фильтрация по isFeatured.
- * - Populate: coverImage и Author, чтобы карточки были полными.
- */
-
 type RoleLike = { type?: string } | string | undefined;
 type UserLike = {
   id: number;
@@ -68,7 +60,6 @@ function normalizeRole(role?: RoleLike): string {
   return (role.type ?? "").toLowerCase();
 }
 
-/** Избранные (isFeatured = true) */
 async function fetchFeaturedArticles(): Promise<ArticleListResponse> {
   const params = new URLSearchParams();
   params.set("filters[isFeatured][$eq]", "true");
@@ -81,7 +72,6 @@ async function fetchFeaturedArticles(): Promise<ArticleListResponse> {
   return apiFetch<ArticleListResponse>(`/api/articles?${params.toString()}`, { method: "GET" });
 }
 
-/** Все статьи (общая лента) */
 async function fetchAllArticles(page: number): Promise<ArticleListResponse> {
   const params = new URLSearchParams();
   params.set("pagination[page]", String(page));

@@ -6,21 +6,18 @@ module.exports = createCoreController('api::favorite.favorite', ({ strapi }) => 
   const user = ctx.state.user;
   if (!user) return ctx.unauthorized('Необходимо авторизоваться');
 
-  // 1. Найти все favorites пользователя
   const favUserLinks = await strapi.db.connection('favorites_user_lnk')
     .select('favorite_id')
     .where('user_id', user.id);
 
   const favoriteIds = favUserLinks.map(r => r.favorite_id);
 
-  // 2. Найти все статьи, связанные с этими favorites
   const favArticles = favoriteIds.length
     ? await strapi.db.connection('favorites_article_lnk')
         .select('favorite_id', 'article_id')
         .whereIn('favorite_id', favoriteIds)
     : [];
 
-  // 3. Подтянуть сами статьи
   const articles = [];
   for (const link of favArticles) {
     const art = await strapi.entityService.findOne('api::article.article', link.article_id, {
@@ -28,9 +25,12 @@ module.exports = createCoreController('api::favorite.favorite', ({ strapi }) => 
     });
     if (art) {
       articles.push({
-        ...art,
-        isFavorite: true,
-        favoriteId: link.favorite_id,
+        id: art.id,
+        attributes: {
+          ...art,
+          isFavorite: true,
+          favoriteId: link.favorite_id,
+        },
       });
     }
   }
@@ -55,7 +55,6 @@ module.exports = createCoreController('api::favorite.favorite', ({ strapi }) => 
     const { article } = ctx.request.body.data || {};
     if (!article) return ctx.badRequest('Не указан article');
 
-    // Проверяем, есть ли уже запись
     const existing = await strapi.entityService.findMany('api::favorite.favorite', {
       filters: { user: user.id, article: article },
     });
@@ -63,7 +62,6 @@ module.exports = createCoreController('api::favorite.favorite', ({ strapi }) => 
       return { isFavorite: true, favoriteId: existing[0].id };
     }
 
-    // Создаём запись
     const fav = await strapi.entityService.create('api::favorite.favorite', {
       data: {
         user: { connect: [user.id] },

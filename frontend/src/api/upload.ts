@@ -3,13 +3,8 @@ import { API_URL, withAuthHeaders } from "./client";
 type UploadResult = Array<{
   id: number;
   url: string;
-  // другие поля Strapi upload ответа
 }>;
 
-/**
- * Загружает один файл в Strapi Upload API.
- * Возвращает массив загруженных файлов (обычно один элемент).
- */
 export async function uploadImage(file: File): Promise<UploadResult> {
   const form = new FormData();
   form.append("files", file);
@@ -17,8 +12,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   const res = await fetch(`${API_URL}/api/upload`, {
     method: "POST",
     headers: {
-      // ВАЖНО: не ставить Content-Type вручную — пусть его выставит браузер для FormData
-      ...withAuthHeaders(), // добавит Authorization: Bearer <jwt>, если доступен
+      ...withAuthHeaders(),
     } as HeadersInit,
     body: form,
   });

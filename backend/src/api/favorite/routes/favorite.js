@@ -6,6 +6,14 @@ module.exports = {
       handler: 'favorite.findUserFavorites',
       config: { auth: { required: true } },
     },
+
+    {
+      method: 'GET',
+      path: '/favorites',
+      handler: 'favorite.find',
+      config: { auth: { required: true } },
+    },
+
     {
       method: 'POST',
       path: '/favorites',

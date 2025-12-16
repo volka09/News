@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "@api/client.ts";
 import { saveAuth } from "@utils/auth.ts";
-import type { Role } from "@utils/auth.ts"; // тип роли из utils
+import type { Role } from "@utils/auth.ts";
 
 type AuthResponse = {
   jwt: string;
@@ -29,16 +29,12 @@ export default function Login(): React.ReactElement {
         body: JSON.stringify({ identifier: email, password }),
       });
 
-      // Берём роль из ответа Strapi, если нет — fallback на "author"
       const roleValue = res.user?.role?.type ?? "author";
 
-      // Приводим к типу Role
       const role = roleValue as Role;
 
-      // Сохраняем авторизацию
       saveAuth(res.jwt, role, res.user);
 
-      // Переадресация после входа
       nav("/");
     } catch {
       setError("Неверный логин или пароль");

@@ -1,4 +1,3 @@
-// src/pages/FeaturedPage.tsx
 import React, { useEffect, useState } from "react";
 import Skeleton from "@components/Skeleton.tsx";
 import ArticleCard from "@components/ArticleCard.tsx";
@@ -10,26 +9,16 @@ type ArticleRel = {
   attributes: {
     slug?: string;
     title?: string;
-    coverImage?: { data?: unknown };
-    category?: { data?: unknown };
-    Author?: { data?: unknown };
+    coverImage?: unknown;
+    category?: unknown;
+    Author?: unknown;
+    isFavorite?: boolean;
+    favoriteId?: number;
     [key: string]: unknown;
   };
 };
 
-type FavoriteItem = {
-  id: number;
-  attributes: {
-    article?: {
-      data?: ArticleRel | null;
-    };
-    user?: {
-      data?: { id: number } | null;
-    };
-  };
-};
-
-type FavoritesResp = { data: FavoriteItem[] };
+type FavoritesResp = { data: ArticleRel[] };
 
 export default function FeaturedPage(): React.ReactElement {
   const user = getUser<{ id?: number }>();
@@ -52,24 +41,11 @@ export default function FeaturedPage(): React.ReactElement {
     setLoading(true);
     setError("");
 
-    const qs = new URLSearchParams({
-      "pagination[page]": "1",
-      "pagination[pageSize]": "12",
-    });
-    qs.set("filters[user][id][$eq]", String(user.id));
-    qs.append("populate[article]", "true");
-    qs.append("populate[article][coverImage]", "true");
-    qs.append("populate[article][category]", "true");
-    qs.append("populate[article][Author]", "true");
-
-    apiFetch<FavoritesResp>(`/api/favorite?${qs.toString()}`, { method: "GET" })
+    apiFetch<FavoritesResp>(`/api/favorites/user`, { method: "GET" })
       .then((resp) => {
         if (!mounted) return;
         const favorites = Array.isArray(resp?.data) ? resp.data : [];
-        const articles =
-          favorites
-            .map((fav) => fav.attributes.article?.data || null)
-            .filter((a): a is ArticleRel => !!a && typeof a.id === "number") ?? [];
+        const articles = favorites.filter((a) => !!a && typeof a.id === "number");
         setItems(articles);
       })
       .catch((e) => {
@@ -112,6 +88,8 @@ export default function FeaturedPage(): React.ReactElement {
                   coverImage: a.attributes.coverImage,
                   category: a.attributes.category,
                   Author: a.attributes.Author,
+                  isFavorite: a.attributes.isFavorite,
+                  favoriteId: a.attributes.favoriteId,
                 } as any}
               />
             </div>

@@ -17,10 +17,7 @@ export default function Navbar(): React.ReactElement {
         НОВОСТИ
       </Link>
       <div className="flex items-center gap-4">
-        {/* Отладочный вывод прямо в навбаре */}
-        <span className="text-xs bg-yellow-200 text-black px-2 rounded">
-          DEBUG role={String(role)} user={JSON.stringify(user)}
-        </span>
+        
 
         {role?.toLowerCase() === "editor" && (
           <Link to="/editor/article" className="text-sm underline">

@@ -9,24 +9,24 @@ import Login from "@pages/Login.tsx";
 import Register from "@pages/Register.tsx";
 import EditorArticleForm from "@pages/EditorArticleForm.tsx";
 import AuthorDashboard from "@pages/AuthorDashboard.tsx";
-import FeaturedPage from "@pages/FeaturedPage.tsx"; // страница избранных
+import FeaturedPage from "@pages/FeaturedPage.tsx"; 
 
 import Navbar from "@components/Navbar.tsx";
 import DebugBanner from "@components/DebugBanner.tsx";
 
-function RootLayout(): React.ReactElement {
-  return (
-    <div className="min-h-screen flex flex-col">
-      <DebugBanner />
-      <Navbar />
-      <main className="container max-w-7xl flex-1 py-6">
-        <Suspense fallback={<div>Загрузка...</div>}>
-          <Outlet />
-        </Suspense>
-      </main>
-    </div>
-  );
-}
+// function RootLayout(): React.ReactElement {
+//   return (
+//     <div className="min-h-screen flex flex-col">
+//       <DebugBanner />
+//       <Navbar />
+//       <main className="container max-w-7xl flex-1 py-6">
+//         <Suspense fallback={<div>Загрузка...</div>}>
+//           <Outlet />
+//         </Suspense>
+//       </main>
+//     </div>
+//   );
+// }
 
 const router = createBrowserRouter([
   {
@@ -40,8 +40,7 @@ const router = createBrowserRouter([
       { path: "register", element: <Register /> },
       { path: "editor/:slug?", element: <EditorArticleForm /> },
       { path: "author", element: <AuthorDashboard /> },
-      { path: "featured", element: <FeaturedPage /> }, // маршрут избранных
-      // Fallback: если путь не найден, уходим на главную, чтобы не было белого экрана
+      { path: "featured", element: <FeaturedPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

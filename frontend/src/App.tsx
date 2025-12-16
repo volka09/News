@@ -78,14 +78,14 @@ export default function App(): React.ReactElement {
     params.set("pagination[page]", "1");
     params.set("pagination[pageSize]", "100");
 
-    apiFetch<FavoritesResp>(`/api/favorite?${params.toString()}`, { method: "GET" })
+    apiFetch<FavoritesResp>(`/api/favorites/user`, { method: "GET" })
       .then((resp) => {
         if (!mounted) return;
         const list = Array.isArray(resp?.data) ? resp.data : [];
         setFavoritesCount(list.length);
         const ids =
           list
-            .map((fav) => fav.attributes.article?.data?.id)
+            .map((fav: any) => fav.article?.id)
             .filter((id): id is number => typeof id === "number") ?? [];
         setFavoritesArticleIds(ids);
         setFavoritesError("");
@@ -109,14 +109,7 @@ export default function App(): React.ReactElement {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <DebugBanner
-        role={role}
-        user={user}
-        jwt={jwt}
-        favoritesCount={favoritesCount}
-        favoritesError={favoritesError}
-        favoritesArticleIds={favoritesArticleIds}
-      />
+      
 
       <header className="bg-black text-white">
         <div className="container max-w-7xl flex items-center justify-between py-4">
